@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nedräkning – välj datum & tid</title>
+  <style>
+    :root {
+      --radius: 22px;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 10% -10%, #f0f7ff 0%, transparent 60%),
+                  radial-gradient(1400px 900px at 110% 10%, #fff6f0 0%, transparent 60%),
+                  linear-gradient(180deg, #f9fafb, #f1f5f9);
+      color: #0f172a;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+    .card {
+      width: min(1000px, 96vw);
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: 0 20px 50px rgba(2, 8, 23, 0.08);
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+    }
+    header {
+      padding: clamp(16px, 2.5vw, 26px);
+      border-bottom: 1px solid #e2e8f0;
+      display: grid;
+      gap: 6px;
+    }
+    header h1 {
+      margin: 0;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      font-size: clamp(20px, 2.2vw, 28px);
+    }
+    header p { margin: 0; color: #475569; font-size: 14px; }
+    .content {
+      display: grid;
+      gap: 18px;
+      padding: clamp(16px, 2.5vw, 26px);
+    }
+    .controls {
+      display: grid;
+      gap: 12px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    @media (min-width: 640px) {
+      .row {
+        grid-template-columns: 1fr auto auto;
+        align-items: end;
+      }
+    }
+    label {
+      font-weight: 600;
+      color: #0f172a;
+      font-size: 14px;
+      margin-bottom: 6px;
+      display: inline-block;
+    }
+    input[type="datetime-local"] {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid #cbd5e1;
+      font: inherit;
+    }
+    .btn {
+      appearance: none;
+      border: 1px solid #cbd5e1;
+      background: #0f172a;
+      color: white;
+      padding: 12px 16px;
+      border-radius: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .04s ease;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn.secondary {
+      background: white;
+      color: #0f172a;
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .timer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(10px, 2.2vw, 22px);
+      padding: clamp(10px, 1.5vw, 16px);
+      border-radius: 18px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      margin-top: 4px;
+    }
+    .segment { text-align: center; }
+    .value {
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum" 1;
+      line-height: 1;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      font-size: clamp(40px, 10vw, 96px);
+      min-width: 3ch;
+    }
+    .label {
+      margin-top: 6px;
+      font-size: clamp(11px, 1.3vw, 14px);
+      color: #64748b;
+    }
+    .colon {
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+      font-size: clamp(32px, 8vw, 72px);
+      color: #cbd5e1;
+      transform: translateY(-2px);
+    }
+    .meta {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      color: #475569;
+      font-size: 14px;
+    }
+    .chip-status {
+      background: #eef2ff;
+      color: #3730a3;
+      border: 1px solid #e0e7ff;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+    footer { padding: 16px 20px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 13px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+  </style>
+</head>
+<body>
+  <section class="card">
+    <header>
+      <h1>Nedräkning</h1>
+      <p id="targetText">Välj datum & tid eller använd en snabbknapp. Länken uppdateras så du kan dela eller spara.</p>
+    </header>
+
+    <div class="content">
+      <div class="controls">
+        <div class="row">
+          <div>
+            <label for="dt">Datum & tid</label>
+            <input id="dt" type="datetime-local" />
+          </div>
+          <button id="apply" class="btn">Starta</button>
+          <div style="display:flex; gap:8px;">
+            <button id="copy" class="btn secondary">Kopiera länk</button>
+            <button id="share" class="btn secondary">Dela…</button>
+          </div>
+        </div>
+        <div class="chips" aria-label="Snabbval">
+          <button class="chip" data-preset="tue10">Tis 10:00 (nästa)</button>
+          <button class="chip" data-preset="wed1145">Ons 11:45 (nästa)</button>
+          <button class="chip" data-preset="in1h">+1 timme</button>
+          <button class="chip" data-preset="tom1145">Imorgon 11:45</button>
+        </div>
+      </div>
+
+      <section class="timer" role="timer" aria-live="polite" aria-atomic="true">
+        <div class="segment">
+          <div id="hours" class="value">000</div>
+          <div class="label">timmar</div>
+        </div>
+        <div class="colon">:</div>
+        <div class="segment">
+          <div id="minutes" class="value">00</div>
+          <div class="label">minuter</div>
+        </div>
+        <div class="colon">:</div>
+        <div class="segment">
+          <div id="seconds" class="value">00</div>
+          <div class="label">sekunder</div>
+        </div>
+      </section>
+
+      <div class="meta">
+        <span class="chip-status" id="statusChip">Aktiv</span>
+        <span>Tidszon: lokal enhet</span>
+      </div>
+    </div>
+
+    <footer>Tip: Spara sidan på hemskärmen för snabb åtkomst.</footer>
+  </section>
+
+  <script>
+    const elDt = document.getElementById('dt');
+    const elApply = document.getElementById('apply');
+    const elCopy = document.getElementById('copy');
+    const elShare = document.getElementById('share');
+    const chips = document.querySelectorAll('.chip');
+    const elHours = document.getElementById('hours');
+    const elMinutes = document.getElementById('minutes');
+    const elSeconds = document.getElementById('seconds');
+    const statusChip = document.getElementById('statusChip');
+    const targetText = document.getElementById('targetText');
+
+    const pad = (n, w=2) => String(n).padStart(w, '0');
+    const fmtDateTimeLocal = (d) => {
+      const y = d.getFullYear();
+      const m = pad(d.getMonth()+1);
+      const day = pad(d.getDate());
+      const h = pad(d.getHours());
+      const min = pad(d.getMinutes());
+      return `${y}-${m}-${day}T${h}:${min}`;
+    };
+
+    function nextWeekdayAt(weekday, hour=0, minute=0) {
+      const now = new Date();
+      const t = new Date(now);
+      t.setHours(hour, minute, 0, 0);
+      const add = (weekday - now.getDay() + 7) % 7;
+      if (add === 0 && now >= t) {
+        t.setDate(t.getDate() + 7);
+      } else {
+        t.setDate(t.getDate() + add);
+      }
+      return t;
+    }
+
+    function tomorrowAt(hour=0, minute=0) {
+      const now = new Date();
+      const t = new Date(now);
+      t.setDate(t.getDate() + 1);
+      t.setHours(hour, minute, 0, 0);
+      return t;
+    }
+
+    function parseTargetFromURL() {
+      const u = new URL(window.location.href);
+      const t = u.searchParams.get('t'); // ISO lokal tid, t.ex. 2025-08-27T11:45
+      if (!t) return null;
+      const d = new Date(t);
+      return isNaN(d) ? null : d;
+    }
+
+    function setTarget(d, push=true) {
+      target = d;
+      elDt.value = fmtDateTimeLocal(d);
+      targetText.textContent = `Räknar ner till ${d.toLocaleDateString('sv-SE', { weekday:'long', day:'numeric', month:'long', year:'numeric' })} kl ${d.toLocaleTimeString('sv-SE', { hour:'2-digit', minute:'2-digit' })}`;
+      if (push) {
+        const u = new URL(window.location.href);
+        u.searchParams.set('t', fmtDateTimeLocal(d));
+        history.replaceState({}, '', u);
+      }
+    }
+
+    let target = parseTargetFromURL();
+    if (!target) {
+      // Standard: nästa onsdag 11:45
+      target = nextWeekdayAt(3, 11, 45); // 0=Sun ... 3=Wed
+    }
+    setTarget(target, false);
+
+    elApply.addEventListener('click', () => {
+      const val = elDt.value;
+      if (!val) return;
+      const d = new Date(val);
+      if (isNaN(d)) return;
+      setTarget(d);
+    });
+
+    chips.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const p = btn.getAttribute('data-preset');
+        if (p === 'tue10') setTarget(nextWeekdayAt(2, 10, 0));
+        if (p === 'wed1145') setTarget(nextWeekdayAt(3, 11, 45));
+        if (p === 'in1h') {
+          const d = new Date();
+          d.setHours(d.getHours() + 1, d.getMinutes(), 0, 0);
+          setTarget(d);
+        }
+        if (p === 'tom1145') setTarget(tomorrowAt(11,45));
+      });
+    });
+
+    elCopy.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(location.href);
+        elCopy.textContent = 'Länk kopierad ✔';
+        setTimeout(() => elCopy.textContent = 'Kopiera länk', 1600);
+      } catch (e) {
+        alert('Kunde inte kopiera. Markera adressfältet och kopiera manuellt.');
+      }
+    });
+
+    elShare.addEventListener('click', async () => {
+      if (navigator.share) {
+        await navigator.share({ title: document.title, url: location.href });
+      } else {
+        alert('Dela inte tillgängligt – använd Kopiera länk.');
+      }
+    });
+
+    function tick() {
+      const now = new Date();
+      let diff = target - now;
+      if (diff <= 0) {
+        statusChip.textContent = 'Klart – välj ny tid';
+        const totalSeconds = 0;
+        elHours.textContent = '000';
+        elMinutes.textContent = '00';
+        elSeconds.textContent = '00';
+        document.title = '⏳ 00:00:00 – Nedräkning';
+        return;
+      } else {
+        statusChip.textContent = 'Aktiv';
+      }
+      const totalSeconds = Math.floor(diff / 1000);
+      const seconds = totalSeconds % 60;
+      const minutes = Math.floor(totalSeconds / 60) % 60;
+      const totalHours = Math.floor(totalSeconds / 3600);
+      elHours.textContent = String(totalHours);
+      elMinutes.textContent = pad(minutes);
+      elSeconds.textContent = pad(seconds);
+      document.title = `⏳ ${totalHours}:${pad(minutes)}:${pad(seconds)} – Nedräkning`;
+    }
+    tick();
+    setInterval(tick, 1000);
+  </script>
+</body>
+</html>
